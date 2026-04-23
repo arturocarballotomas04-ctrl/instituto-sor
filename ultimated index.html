@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Instituto Sor Juana Inés de la Cruz</title>
+    <style>
+        :root {
+            --primary: #1a252f;
+            --majo: #8e44ad;
+            --arturo: #c0392b;
+            --success: #27ae60;
+            --bg: #f0f3f4;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            padding: 15px;
+        }
+
+        #game-container {
+            background: white;
+            width: 100%;
+            max-width: 450px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            padding: 20px;
+            text-align: center;
+            border-top: 10px solid var(--primary);
+        }
+
+        .header h1 { font-size: 1.1rem; color: var(--primary); margin: 0; }
+        .header p { font-size: 0.8rem; color: #666; margin: 5px 0 15px; }
+
+        .screen { display: none; }
+        .active { display: block; }
+
+        /* Estilo de Botones de Operación */
+        .grid-ops {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .op-btn {
+            background: #eee;
+            border: 2px solid #ddd;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .op-btn.selected {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Tarjetas de Profesores */
+        .card {
+            border: 2px solid #eee;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            text-align: left;
+            transition: 0.2s;
+        }
+
+        .card:active { transform: scale(0.98); }
+        .card.majo { border-left: 8px solid var(--majo); }
+        .card.arturo { border-left: 8px solid var(--arturo); }
+
+        /* Pantalla de Juego */
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            background: var(--primary);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        #math-question {
+            font-size: 4.5rem;
+            margin: 20px 0;
+            color: #222;
+        }
+
+        input {
+            width: 80%;
+            padding: 15px;
+            font-size: 2rem;
+            border: 3px solid #ddd;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+            outline: none;
+        }
+
+        input:focus { border-color: var(--success); }
+
+        .btn-main {
+            background: var(--success);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 18px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        .btn-exit {
+            background: none;
+            border: none;
+            color: #e74c3c;
+            text-decoration: underline;
+            margin-top: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 10px; border-bottom: 1px solid #eee; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div class="header">
+        <h1>Instituto Sor Juana Inés de la Cruz</h1>
+        <p>Estudiante: Arturo Carballo Tomas</p>
+    </div>
+
+    <div id="start-screen" class="screen active">
+        <input type="text" id="player-name" placeholder="Escribe tu nombre" style="font-size: 1.2rem; height: 30px;">
+        
+        <p><strong>1. Elige una operación:</strong></p>
+        <div class="grid-ops">
+            <button class="op-btn selected" onclick="setOp(this, '+')">Sumas</button>
+            <button class="op-btn" onclick="setOp(this, '-')">Restas</button>
+            <button class="op-btn" onclick="setOp(this, '*')">Multiplicar</button>
+            <button class="op-btn" onclick="setOp(this, '/')">Dividir</button>
+            <button class="op-btn" onclick="setOp(this, 'mix')" style="grid-column: span 2;">Mezclado (+ - × ÷)</button>
+        </div>
+
+        <p><strong>2. Selecciona modo:</strong></p>
+        <div class="card majo" onclick="start('normal')">
+            <strong>👩‍🏫 Srta. María José</strong>
+            <div style="font-size: 0.8rem;">Modo Normal: 1 min + 5s por acierto.</div>
+        </div>
+        <div class="card arturo" onclick="start('desafio')">
+            <strong>👨‍🏫 Prof. Arturo</strong>
+            <div style="font-size: 0.8rem;">Modo Desafío: 1 min + 2s por acierto.</div>
+        </div>
+        <button onclick="showRanking()" style="color:blue; background:none; border:none; cursor:pointer;">Ver Cuadro de Honor</button>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div class="stats">
+            <span id="timer">01:00</span>
+            <span id="score">Pts: 0</span>
+        </div>
+        <div id="teacher-msg" style="font-size: 0.85rem; color: #555; height: 20px;"></div>
+        <div id="math-question">0 + 0</div>
+        <input type="number" id="math-input" pattern="\d*" inputmode="numeric" placeholder="?">
+        <button class="btn-main" onclick="check()">RESPONDER</button>
+        <button class="btn-exit" onclick="location.reload()">SALIR</button>
+    </div>
+
+    <div id="ranking-screen" class="screen">
+        <h2>🏆 Ranking</h2>
+        <table id="rank-table">
+            <thead><tr><th>Nombre</th><th>Puntos</th></tr></thead>
+            <tbody id="rank-body"></tbody>
+        </table>
+        <button class="btn-main" style="margin-top:20px;" onclick="location.reload()">VOLVER</button>
+    </div>
+</div>
+
+<script>
+    let op = '+';
+    let pts = 0;
+    let time = 60;
+    let clock;
+    let ans;
+    let mode = '';
+
+    function setOp(btn, selected) {
+        document.querySelectorAll('.op-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        op = selected;
+    }
+
+    function start(m) {
+        const name = document.getElementById('player-name').value;
+        if(!name) return alert("¡Pon tu nombre!");
+        mode = m;
+        pts = 0;
+        time = 60;
+        document.getElementById('start-screen').classList.remove('active');
+        document.getElementById('game-screen').classList.add('active');
+        tick();
+        newQ();
+    }
+
+    function tick() {
+        clock = setInterval(() => {
+            time--;
+            let m = Math.floor(time / 60);
+            let s = time % 60;
+            document.getElementById('timer').innerText = `${m}:${s < 10 ? '0'+s : s}`;
+            if(time <= 0) end();
+        }, 1000);
+    }
+
+    function newQ() {
+        let currentOp = op === 'mix' ? ['+','-','*','/'][Math.floor(Math.random()*4)] : op;
+        let n1, n2;
+        let limit = mode === 'desafio' ? 50 : 12;
+
+        if(currentOp === '+') { n1 = rand(limit); n2 = rand(limit); ans = n1 + n2; }
+        else if(currentOp === '-') { n1 = rand(limit)+10; n2 = rand(n1); ans = n1 - n2; }
+        else if(currentOp === '*') { n1 = rand(10); n2 = rand(10); ans = n1 * n2; }
+        else { n2 = rand(9)+1; ans = rand(10); n1 = n2 * ans; }
+
+        let symbol = currentOp === '*' ? '×' : (currentOp === '/' ? '÷' : currentOp);
+        document.getElementById('math-question').innerText = `${n1}${symbol}${n2}`;
+        document.getElementById('math-input').value = '';
+        document.getElementById('math-input').focus();
+        
+        const teacher = mode === 'normal' ? "Srta. Majo" : "Prof. Arturo";
+        document.getElementById('teacher-msg').innerText = `${teacher}: ¡Vamos tú puedes!`;
+    }
+
+    function rand(max) { return Math.floor(Math.random() * max) + 1; }
+
+    function check() {
+        const user = parseInt(document.getElementById('math-input').value);
+        if(user === ans) {
+            pts += (mode === 'desafio' ? 20 : 10);
+            time += (mode === 'desafio' ? 2 : 5);
+            document.getElementById('score').innerText = `Pts: ${pts}`;
+            newQ();
+        } else {
+            if(mode === 'desafio') time -= 3;
+            document.getElementById('math-input').value = '';
+        }
+    }
+
+    function end() {
+        clearInterval(clock);
+        alert(`¡Fin del tiempo! Puntos: ${pts}`);
+        let r = JSON.parse(localStorage.getItem('isr_r') || '[]');
+        r.push({n: document.getElementById('player-name').value, p: pts});
+        r.sort((a,b) => b.p - a.p);
+        localStorage.setItem('isr_r', JSON.stringify(r.slice(0,5)));
+        showRanking();
+    }
+
+    function showRanking() {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('ranking-screen').classList.add('active');
+        const r = JSON.parse(localStorage.getItem('isr_r') || '[]');
+        document.getElementById('rank-body').innerHTML = r.map(i => `<tr><td>${i.n}</td><td>${i.p}</td></tr>`).join('');
+    }
+
+    document.getElementById('math-input').addEventListener('keypress', (e) => { if(e.key==='Enter') check(); });
+</script>
+</body>
+</html>
